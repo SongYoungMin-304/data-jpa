@@ -1,5 +1,4 @@
 # 2023.01.05
-
 **ENTITY 설계**
 
 ![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8ea37f67-7ed7-4bd2-911b-29092393a64b/Untitled.png)
