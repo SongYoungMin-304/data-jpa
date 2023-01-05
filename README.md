@@ -47,3 +47,10 @@ public class TeamJpaRepository {
 ```
 
 **TO-BE**
+
+```java
+public interface MemberRepository extends JpaRepository<Member, Long> {
+}
+```
+
+![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/38c4b0b9-5bd2-4bab-bd47-c596dcd93b8d/Untitled.png)
