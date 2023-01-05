@@ -1,0 +1,22 @@
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@127.0.0.1:1521/orcl
+    username: jpastudy
+    password: 1234
+    driver-class-name: oracle.jdbc.driver.OracleDriver
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    properties:
+      hibernate:
+        #         show_sql: true
+        format_sql: true
+        default_batch_fetch_size: 1
+    open-in-view: true
+
+
+logging.level:
+  org.hibernate.SQL: debug
+  org.hibernate.type: trace
+
