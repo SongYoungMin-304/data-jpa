@@ -1,11 +1,11 @@
 # 2023.01.05
 **ENTITY 설계**
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/8ea37f67-7ed7-4bd2-911b-29092393a64b/Untitled.png)
+![image](https://user-images.githubusercontent.com/56577599/210739176-5c2395de-ea1c-49c2-8f69-b08751660291.png)
 
 JPA DATA란? 
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/75da3116-dc52-4d76-a3a4-27dd8f5e9359/Untitled.png)
+![image](https://user-images.githubusercontent.com/56577599/210739265-99920768-1d13-4cca-ae7d-2d8d5ee98378.png)
 
 → 인터페이스를 상속 받음으로써 기본 CRUD 기능 제공
 
@@ -52,4 +52,5 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 }
 ```
 
-![Untitled](https://s3-us-west-2.amazonaws.com/secure.notion-static.com/38c4b0b9-5bd2-4bab-bd47-c596dcd93b8d/Untitled.png)
+![image](https://user-images.githubusercontent.com/56577599/210739405-1eb6b9ce-8de9-4fc7-985e-7ed696d0077c.png)
+
