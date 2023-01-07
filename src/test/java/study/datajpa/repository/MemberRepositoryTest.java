@@ -283,5 +283,79 @@ public class MemberRepositoryTest {
 
     }
 
+    @Test
+    public void findMemberLazy(){
+        //given
+        //member1 -> teamA
+        //member2 -> teamB
+
+        Team teamA = new Team("teamA");
+        Team teamB = new Team("teamB");
+
+        teamRepository.save(teamA);
+        teamRepository.save(teamB);
+
+        Member member1 = new Member("member1", 10, teamA);
+        Member member2 = new Member("member2", 10, teamB);
+
+        memberRepository.save(member1);
+        memberRepository.save(member2);
+
+        em.flush(); // 반영
+        em.clear(); // 영속성 컨테스트 날려버림
+
+        //when N + 1
+        //select Member 1
+        //team N(Member 의 갯수가 N)
+//        List<Member> all = memberRepository.findMemberFetchJoin();
+
+        // entity graph 를 쓰면 fetch join 을 편리하게 사용할 수 있다..
+
+        List<Member> all = memberRepository.findEntityGraphByUsername("member1");
+
+        for (Member member : all) {
+            System.out.println("member = "+ member.getUsername());
+            System.out.println("memeber.teamClass ="+ member.getTeam().getClass());
+            System.out.println("member.team = "+member.getTeam().getName());
+        }
+
+
+    }
+
+    @Test
+    public void queryHint(){
+        // given
+        Member member1 = memberRepository.save(new Member("member1", 10));
+        em.flush(); // 영속성을 db에 동기화
+        em.clear(); // 영속성을 날려버림
+
+        //when
+        Member findMember = memberRepository.findReadOnlyByUsername("member1");
+        findMember.setUsername("member2");
+
+        System.out.println("test1"+findMember.getUsername());
+
+        em.flush();
+        em.clear();
+        Member findMember2 = memberRepository.findReadOnlyByUsername("member1");
+
+        System.out.println("test2"+findMember2.getUsername());
+
+
+        em.flush(); // 변경감지..
+    }
+    
+    @Test
+    public void lock(){
+        Member member1 = memberRepository.save(new Member("member1", 10));
+        em.flush(); // 영속성을 db에 동기화
+        em.clear(); // 영속성을 날려버림
+
+        //when
+        List<Member> result = memberRepository.findLockByUsername("member1");
+
+
+    }
+
 
 }
