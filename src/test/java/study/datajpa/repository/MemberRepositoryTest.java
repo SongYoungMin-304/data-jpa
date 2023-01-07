@@ -13,6 +13,8 @@ import study.datajpa.dto.MemberDto;
 import study.datajpa.entity.Member;
 import study.datajpa.entity.Team;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -29,6 +31,9 @@ public class MemberRepositoryTest {
 
     @Autowired
     TeamRepository teamRepository;
+
+    @PersistenceContext
+    EntityManager em;
 
     @Test
     public void testMember(){
@@ -255,6 +260,28 @@ public class MemberRepositoryTest {
     }
 
 
+    @Test
+    public void bulkUpdate(){
+        memberRepository.save(new Member("member1", 10));
+        memberRepository.save(new Member("member2", 20));
+        memberRepository.save(new Member("member3", 30));
+        memberRepository.save(new Member("member4", 40));
+        memberRepository.save(new Member("member5", 50));
+        memberRepository.save(new Member("member6", 60));
+
+        int resultCOunt = memberRepository.bulkAgePlus(20);
+
+        // 영속성 컨테이너를 날려버려야지 영속성 관리됨 영속성이랑.. db랑 고립관계가 있기 때문에 flush 등을 해야함
+        //em.flush();
+        //em.clear();
+
+        List<Member> member5 = memberRepository.findByUsername("member5");
+
+        System.out.println("테스트영민"+ member5.get(0));
+
+        assertThat(resultCOunt).isEqualTo(5);
+
+    }
 
 
 }
