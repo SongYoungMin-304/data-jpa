@@ -3,6 +3,10 @@ package study.datajpa.repository;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Slice;
+import org.springframework.data.domain.Sort;
 import org.springframework.test.annotation.Rollback;
 import org.springframework.transaction.annotation.Transactional;
 import study.datajpa.dto.MemberDto;
@@ -184,6 +188,72 @@ public class MemberRepositoryTest {
         Member aaa1 = memberRepository.findMemberByUsername("aaa");
         System.out.println("result2"+ aaa1); // 단건인 경우에는 null
     }
+
+    @Test
+    public void pageQuery(){
+        Member m1 = new Member("aaa",10);
+        Member m2 = new Member("BBB",20);
+        Member m3 = new Member("ccc",30);
+        Member m4 = new Member("ddd",40);
+
+        Member m5 = new Member("ddd1",40);
+        Member m6 = new Member("ddd1",40);
+        Member m7 = new Member("ddd1",40);
+        Member m8 = new Member("ddd1",40);
+        Member m9 = new Member("ddd1",40);
+        Member m10 = new Member("ddd1",40);
+
+
+        memberRepository.save(m1);
+        memberRepository.save(m2);
+        memberRepository.save(m2);
+        memberRepository.save(m3);
+        memberRepository.save(m4);
+        memberRepository.save(m5);
+        memberRepository.save(m6);
+        memberRepository.save(m7);
+        memberRepository.save(m8);
+        memberRepository.save(m9);
+
+
+        PageRequest pageRequest = PageRequest.of(0, 3, Sort.Direction.DESC, "username");
+
+
+        // Page, Slice, List 전부 다 가능
+        Page<Member> byAge = memberRepository.findByAge(40, pageRequest);
+        //long totalElements = byAge.getTotalElements();
+
+        // Entity 를 직접 노출하면 안된다....
+        // dto로 쉽게 변환..
+        Page<MemberDto> map = byAge.map(member -> new MemberDto(member.getId(), member.getUsername(), null));
+
+
+
+        // then
+        List<Member> content = byAge.getContent();
+
+        assertThat(content.size()).isEqualTo(3);
+        assertThat(byAge.getTotalElements()).isEqualTo(6);
+        assertThat(byAge.getNumber()).isEqualTo(0);  // 페이지 번호
+        assertThat(byAge.getTotalPages()).isEqualTo(2);
+        assertThat(byAge.isFirst()).isTrue();
+        assertThat(byAge.hasNext()).isTrue();
+
+
+        for (Member member : content) {
+            System.out.println("member" + member);
+        }
+
+//        System.out.println("totalElement "+ totalElements);
+
+/*
+        long count = memberRepository.totalCount(10);
+
+        assertThat(byPage.size()).isEqualTo(1);
+*/
+
+    }
+
 
 
 

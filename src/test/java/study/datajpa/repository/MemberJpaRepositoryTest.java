@@ -92,4 +92,22 @@ class MemberJpaRepositoryTest {
 
     }
 
+    @Test
+    public void pageQuery(){
+        Member m1 = new Member("aaa",10);
+        Member m2 = new Member("BBB",20);
+
+        memberJpaRepository.save(m1);
+        memberJpaRepository.save(m2);
+
+
+        List<Member> byPage = memberJpaRepository.findByPage(10, 0, 2);
+
+        long count = memberJpaRepository.totalCount(10);
+
+        assertThat(byPage.size()).isEqualTo(1);
+        assertThat(count).isEqualTo(1);
+
+    }
+
 }
