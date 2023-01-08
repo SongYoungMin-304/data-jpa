@@ -12,7 +12,7 @@ import javax.persistence.QueryHint;
 import java.util.List;
 import java.util.Optional;
 
-public interface MemberRepository extends JpaRepository<Member, Long> {
+public interface MemberRepository extends JpaRepository<Member, Long>, MemberRepositoryCustom {
 
     /*
      * 쿼리 메소드 ..
@@ -82,4 +82,6 @@ public interface MemberRepository extends JpaRepository<Member, Long> {
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     List<Member> findLockByUsername(String user);
+
+
 }

@@ -15,6 +15,13 @@ spring:
         default_batch_fetch_size: 1
     open-in-view: true
 
+  data:
+    web:
+      pageable:
+        default-page-size: 10
+        max-page-size: 2000
+        one-indexed-parameters: true
+
 
 logging.level:
   org.hibernate.SQL: debug
