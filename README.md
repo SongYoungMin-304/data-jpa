@@ -413,7 +413,7 @@ List<Member> findByUsername(String name);
 →  SELECT FOR UPDATE 처럼 SELECT 하는 시점에서 잠가버림
 
 
-#2023.01.09
+# 2023.01.05
 
 ### 1. 확장기능
 
