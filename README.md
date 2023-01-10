@@ -411,3 +411,268 @@ List<Member> findByUsername(String name);
 ```
 
 →  SELECT FOR UPDATE 처럼 SELECT 하는 시점에서 잠가버림
+
+
+# 2023.01.09
+
+### 1. 확장기능
+
+사용자 정의 리포지토리 구현
+
+사용자 정의 인터페이스
+
+```java
+public interface MemberRepositoryCustom {
+   List<Member> findMemberCustom();
+}
+```
+
+사용자 정의 인터페이스 구현 클래스
+
+```java
+@RequiredArgsConstructor
+public class MemberRepositoryImpl implements MemberRepositoryCustom {
+   private final EntityManager em;
+   @Override
+    public List<Member> findMemberCustom() {
+       return em.createQuery("select m from Member m")
+       .getResultList();
+  }
+}
+```
+
+사용자 정의 인터페이스 상속
+
+```java
+public interface MemberRepository
+   extends JpaRepository<Member, Long>, MemberRepositoryCustom {
+}
+```
+
+사용자 정의 메서드 호출 코드
+
+```java
+List<Member> result = memberRepository.findMemberCustom();
+```
+
+### 2. Auditing(생성자, 생성시간, 수정자, 수정시간)
+
+순수 JPA 사용
+
+```java
+package study.datajpa.entity;
+@MappedSuperclass
+@Getter
+public class JpaBaseEntity {
+ @Column(updatable = false)
+     private LocalDateTime createdDate;
+     private LocalDateTime updatedDate;
+ @PrePersist
+ public void prePersist() {
+     LocalDateTime now = LocalDateTime.now();
+     createdDate = now;
+     updatedDate = now;
+ }
+ @PreUpdate
+ public void preUpdate() {
+     updatedDate = LocalDateTime.now();
+ }
+}
+```
+
+→ updatable = false 로 독자적 업데이트 막음
+
+→ prePersist 로 persist 생성 전에 속성 세팅
+
+→ preUpdate로 업데이트(변경감지) 시 속성 세팅
+
+확인코드
+
+```java
+@Test
+public void JpaEventBaseEntity() throws Exception {
+ //given
+     Member member = new Member("member1");
+     memberRepository.save(member); //@PrePersist
+     Thread.sleep(100);
+     member.setUsername("member2");
+     em.flush(); //@PreUpdate
+     em.clear();
+ //when
+     Member findMember = memberRepository.findById(member.getId()).get();
+ //then
+     System.out.println("findMember.createdDate = " + findMember.getCreatedDate());
+     System.out.println("findMember.updatedDate = " + findMember.getUpdatedDate());
+}
+```
+
+스프링 데이터 사용
+
+```java
+@EntityListeners(AuditingEntityListener.class)
+@MappedSuperclass
+public class BaseTimeEntity {
+     @CreatedDate
+     @Column(updatable = false)
+     private LocalDateTime createdDate;
+ 
+     @LastModifiedDate
+     private LocalDateTime lastModifiedDate;
+}
+
+@EntityListeners(AuditingEntityListener.class)
+@MappedSuperclass
+public class BaseEntity extends BaseTimeEntity {
+     @CreatedBy
+     @Column(updatable = false)
+     private String createdBy;
+ 
+     @LastModifiedBy
+     private String lastModifiedBy;
+}
+
+// 등록자, 수정자를 처리해주는 AuditorAware 스프링 Bean 등록(실무에서는 session)
+
+@Bean
+public AuditorAware<String> auditorProvider() {
+ return () -> Optional.of(UUID.randomUUID().toString());
+}
+```
+
+→ 엔티티에는 `@EntityListeners(AuditingEntityListener.class)` 적용 해야함
+
+### 3. Web확장 - 도메인 클래스 컨버터 & 페이징과 정렬
+
+**도메인 클래스 컨버터**
+
+as-is
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class MemberController {
+ 
+ private final MemberRepository memberRepository;
+ @GetMapping("/members/{id}")
+ public String findMember(@PathVariable("id") Long id) {
+      Member member = memberRepository.findById(id).get();
+      return member.getUsername();
+ }
+}
+```
+
+to-be
+
+```java
+@RestController
+@RequiredArgsConstructor
+public class MemberController {
+ private final MemberRepository memberRepository;
+ @GetMapping("/members/{id}")
+ public String findMember(@PathVariable("id") Member member) {
+      return member.getUsername();
+ }
+}
+```
+
+**페이징과 정렬**
+
+```java
+@GetMapping("/members")
+public Page<Member> list(Pageable pageable) {
+     Page<Member> page = memberRepository.findAll(pageable);
+     return page;
+}
+
+RequestMapping(value = "/members_page", method = RequestMethod.GET)
+public String list(@PageableDefault(size = 12, sort = "username",
+     direction = Sort.Direction.DESC) Pageable pageable) {
+       ...
+}
+
+public String list(
+ @Qualifier("member") Pageable memberPageable,
+ @Qualifier("order") Pageable orderPageable, ...
+
+```
+
+→ Pageable 객체를 기본적으로 받아서 처리 가능
+
+예제1) /members?page=0&size=3&sort=id,desc&sort=username,desc
+
+예제2) /members?member_page=0&order_page=1
+
+- entity 직접 반환 안됨
+
+```java
+@GetMapping("/members")
+public Page<MemberDto> list(Pageable pageable) {
+     //return memberRepository.findAll(pageable).map(member -> new MemberDto(member.getId(), member.getUsername(), null)); 
+     return memberRepository.findAll(pageable).map(MemberDto::new);
+}
+```
+
+### 4. 스프링 데이터 JPA 분석
+
+```java
+@Repository
+@Transactional(readOnly = true)
+public class SimpleJpaRepository<T, ID> ...{
+ @Transactional
+ public <S extends T> S save(S entity) {
+     if (entityInformation.isNew(entity)) {
+        em.persist(entity);
+        return entity;
+ } else {
+        return em.merge(entity);
+ }
+ }
+ ...
+}
+```
+
+→ 기본적으로 @Transactional에 감싸져 있음(* 굳이 호출할 때 @Transactional 안 감싸도 됨)
+
+**@Transactional(readOnly = true)**
+
+→ flush 를 사용 안하기 때문에 성능 조금 향상 가능(변경 감지 당연히 안됨)
+
+**→ 새로운 엔티티면 저장(persist) 아니면 병합(merge) 처리함**
+
+**→ @Id @GenerateValue 를 쓰는 경우에는 당연히 비어서 persist를 호출하지만 만약** 
+
+**@Id 값을 직접 넣어서 사용한다면 merge(select & insert) 를 하는 경우가 발생할 수 있음** 
+
+**아래와 같은 방법으로 CreatedDate 시간을 봐서 처리가능(isNew 구현)**
+
+```java
+package org.springframework.data.domain;
+public interface Persistable<ID> {
+    ID getId();
+    boolean isNew();
+}
+
+public class Item implements Persistable<String> {
+
+    @Id //@GeneratedValue
+    private String id;
+
+    @CreatedDate
+    private LocalDateTime createdDate;
+
+    public Item(String id) {
+        this.id = id;
+    }
+
+    @Override
+    public String getId() {
+        return id;
+    }
+
+    @Override
+    public boolean isNew() {
+        return createdDate == null;
+    }
+```
+
+Specifications 및 Query By Example 실제 업무에서 사용 안함 굳이 정리 필요 x
